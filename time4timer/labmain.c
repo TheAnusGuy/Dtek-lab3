@@ -21,6 +21,7 @@ int seconds = 0;
 int minutes = 0;
 int hours = 0;
 int segment_number_values[] = {64, 121, 36, 48, 25, 18, 2, 120, 0, 16};
+int timeoutcount = 0;
 
 /* Below is the function that will be called when an interrupt is triggered. */
 void handle_interrupt(unsigned cause) 
@@ -143,8 +144,6 @@ int main() {
   // Call labinit()
   labinit();
 
-  volatile int *timer_status = (volatile int *) 0x04000020;
-
   print("The toggles are: ");
   print_dec(get_sw());
   print("\n");
@@ -162,14 +161,16 @@ int main() {
   // Enter a forever loop
   while (1) {
 
+    volatile int *timer_status = (volatile int *) 0x04000020;
+    volatile int *timer_control = (volatile int*) 0x04000024;
+
     int button_value = get_btn();
     if (button_value != 0){
       int switch_value = get_sw();
       int mostimportant2 = (switch_value >> 8) & 0x3;
       int leastimportant6 = switch_value & 0x3F;
 
-      switch (mostimportant2)
-      {
+      switch (mostimportant2){
       case 0b01:
         seconds = leastimportant6;
         break;
@@ -185,23 +186,19 @@ int main() {
     }
     
     if (*timer_status & 0x1){
-      *timer_status = 1;
+      *timer_status = 0x0;
+      *timer_control = 0x4;
 
-      display_time();
-      update_time();
+      timeoutcount++;
 
-      time2string( textstring, mytime ); // Converts mytime to string
-      display_string( textstring ); //Print out the string 'textstring'
-      tick( &mytime );     // Ticks the clock once
+      if (timeoutcount % 10 == 0){
+        display_time();
+        update_time();
+
+        time2string( textstring, mytime ); // Converts mytime to string
+        display_string( textstring ); //Print out the string 'textstring'
+        tick( &mytime );     // Ticks the clock once
+      }
     }
-
-    // display_time();
-    // update_time();
-
-    // time2string( textstring, mytime ); // Converts mytime to string
-    // display_string( textstring ); //Print out the string 'textstring'
-    // delay( 1000 );          // Delays 1 sec (adjust this value)
-    // tick( &mytime );     // Ticks the clock once
-
   }
 }
