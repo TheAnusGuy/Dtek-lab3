@@ -14,6 +14,7 @@ extern void time2string(char*,int);
 extern void tick(int*);
 extern void delay(int);
 extern int nextprime( int );
+extern void enable_interrupt();
 
 int mytime = 0x5957;
 char textstring[] = "text, more text, and even more text!";
@@ -62,6 +63,8 @@ void labinit(void){
 
     *timer_control = 0x4;        // Set only the START bit to 1 (binary 0100)
     *timer_status = 0;
+
+    enable_interrupt();
 }
 
 void set_leds(int led_mask){
@@ -161,6 +164,7 @@ void display_time(){
 /* Your code goes into main as well as any needed functions. */
 int main(void){
 labinit();
+
 while (1) {
   print("Prime: ");
   prime = nextprime( prime );

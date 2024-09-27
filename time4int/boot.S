@@ -127,3 +127,14 @@ _start:
 loop:	j loop
 
 enable_interrupt:
+	csrr t0, mstatus			/* Get the value of the current mstatus register*/
+	li t1, 0x8					/* Load a bit mask (1000 in binary numbers) */
+	or t0, t0, t1				/* Set MIE (machine interrupt enable control register) bit to 1 */
+	csrw t0, mstatus			/* Store value to the mstatus register */
+
+	csrr mie, t0				/* Get the value of the mie register */
+	li t1, 0x80					/* Enable MTIE register (the interrupt enable register) */
+	or t0, t0, t1				/* Set MTIE bit to 1 */
+	csrw mie, t0				/* Store value in the mie register */
+
+	ret
