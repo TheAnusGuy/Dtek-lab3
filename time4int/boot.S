@@ -4,8 +4,7 @@ welcome_msg: .asciz "================================================\n===== RIS
 	
 .section .text
 .align 2
-.globl _start
-.globl enable_interrupt
+.globl _start, enable_interrupt
 	
 _isr_handler:
 	j _isr_routine	   /* ISR service routine here */
@@ -127,14 +126,5 @@ _start:
 loop:	j loop
 
 enable_interrupt:
-	csrr t0, mstatus			/* Get the value of the current mstatus register*/
-	li t1, 0x8					/* Load a bit mask (1000 in binary numbers) */
-	or t0, t0, t1				/* Set MIE (machine interrupt enable control register) bit to 1 */
-	csrw t0, mstatus			/* Store value to the mstatus register */
-
-	csrr mie, t0				/* Get the value of the mie register */
-	li t1, 0x80					/* Enable MTIE register (the interrupt enable register) */
-	or t0, t0, t1				/* Set MTIE bit to 1 */
-	csrw mie, t0				/* Store value in the mie register */
-
-	ret
+	csrsi mstatus, 3			// Enable global interrupts (set bits 0 and 1 in mstatus).	
+	csrsi mie, 16				// Enable machine timer interrupt (set bit 16 in mie).

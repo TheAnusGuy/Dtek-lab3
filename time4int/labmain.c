@@ -14,7 +14,7 @@ extern void time2string(char*,int);
 extern void tick(int*);
 extern void delay(int);
 extern int nextprime( int );
-extern void enable_interrupt();
+extern void enable_interrupt(void);
 
 int mytime = 0x5957;
 char textstring[] = "text, more text, and even more text!";
@@ -24,28 +24,6 @@ int hours = 0;
 int segment_number_values[] = {64, 121, 36, 48, 25, 18, 2, 120, 0, 16};
 int timeoutcount = 0;
 int prime = 1234567;
-
-/* Below is the function that will be called when an interrupt is triggered. */
-void handle_interrupt(unsigned cause){
-  volatile int *timer_status = (volatile int *) 0x04000020;
-  volatile int *timer_control = (volatile int*) 0x04000024;
-
-  if (*timer_status & 0x1){
-    *timer_status = 0x0;
-    *timer_control = 0x4;
-
-    timeoutcount++;
-
-    if (timeoutcount % 10 == 0){
-      display_time();
-      update_time();
-
-      time2string( textstring, mytime ); // Converts mytime to string
-      display_string( textstring ); //Print out the string 'textstring'
-      tick( &mytime );     // Ticks the clock once
-    }
-  }
-}
 
 /* Add your code here for initializing interrupts. */
 // 100 ms = 0.1 s.
@@ -61,7 +39,7 @@ void labinit(void){
     *timer_periodl = 0xC6C0;   // Set the lower half of the period 
     *timer_periodh = 0x2D;        // Set the upper half of the period 
 
-    *timer_control = 0x4;        // Set only the START bit to 1 (binary 0100)
+    *timer_control |= 0x7;        // Set the START, CONT and ITO bit to 1 (binary 0111)
     *timer_status = 0;
 
     enable_interrupt();
@@ -139,7 +117,7 @@ void update_time(){
 void digit_converter(int display, int digit){
     if (digit >= 0 && digit <= 9) {
         int value = segment_number_values[digit];  // Get the corresponding value from the array
-        set_displays(display, value);       // Set the value on the correct display
+        set_displays(display, value);              // Set the value on the correct display
     }
 }
 
@@ -148,7 +126,7 @@ void display_time(){
   int hours_1D = hours / 10;  
   int hours_2D = hours % 10;  
   digit_converter(6, hours_1D);  
-  digit_converter(5, hours_2D);  
+  digit_converter(5, hours_2D); 
 
   int minutes_1D = minutes / 10;  
   int minutes_2D = minutes % 10;  
@@ -161,10 +139,25 @@ void display_time(){
   digit_converter(1, seconds_2D);    
 }
 
+/* Below is the function that will be called when an interrupt is triggered. */
+void handle_interrupt(unsigned cause){
+  volatile int *timer_status = (volatile int *) 0x04000020;
+  volatile int *timer_control = (volatile int*) 0x04000024;
+
+  *timer_status = 0x0;
+  *timer_control |= 0x7;
+
+  timeoutcount++;
+
+  if (timeoutcount % 10 == 0){
+    display_time();
+    update_time();
+    tick(&mytime);     // Ticks the clock once
+  }
+}
 /* Your code goes into main as well as any needed functions. */
 int main(void){
 labinit();
-
 while (1) {
   print("Prime: ");
   prime = nextprime( prime );
